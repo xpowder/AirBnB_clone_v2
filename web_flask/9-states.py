@@ -1,42 +1,27 @@
 #!/usr/bin/python3
-"""Starts a Flask web application.
-
-The application listens on 0.0.0.0, port 5000.
-Routes:
-    /states: HTML page with a list of all State objects.
-    /states/<id>: HTML page displaying the given state with <id>.
-"""
+"""Flask app to generate html list of all states from storage"""
+from flask import Flask, render_template
 from models import storage
-from flask import Flask
-from flask import render_template
-
-app = Flask(__name__)
+app = Flask('web_flask')
+app.url_map.strict_slashes = False
 
 
-@app.route("/states", strict_slashes=False)
-def states():
-    """Displays an HTML page with a list of all States.
-
-    States are sorted by name.
-    """
-    states = storage.all("State")
-    return render_template("9-states.html", state=states)
-
-
-@app.route("/states/<id>", strict_slashes=False)
-def states_id(id):
-    """Displays an HTML page with info about <id>, if it exists."""
-    for state in storage.all("State").values():
-        if state.id == id:
-            return render_template("9-states.html", state=state)
-    return render_template("9-states.html")
+@app.route('/states/<id>')
+@app.route('/states', defaults={'id': None})
+def specific_state(id):
+    """Render as html alphabetical list of states or specific state entry
+    in `storage` if `id` is a valid identifier"""
+    states = storage.all('State')
+    if id:
+        id = 'State.' + id
+    return render_template('9-states.html', states=states, id=id)
 
 
 @app.teardown_appcontext
-def teardown(exc):
-    """Remove the current SQLAlchemy session."""
+def teardown_db(*args, **kwargs):
+    """Close database or file storage"""
     storage.close()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host='0.0.0.0', port=5000)
